@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,7 +42,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setNickname(user.getUsername());
         }
         user.setAvatar(defaultAvatar);
-        user.setPassword(MD5Utils.digest(user.getPassword()));
+        user.setSalt(UUID.randomUUID().toString());
+        user.setPassword(MD5Utils.digest(user.getPassword() + user.getSalt()));
         if (!save(user)) {
             throw new BreadCloudException(Code.FAIL, "注册失败, 再试一次吧");
         }
@@ -50,26 +52,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Map<String, Object> login(User user) {
-        user.setPassword(MD5Utils.digest(user.getPassword()));
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         if (ValidateUtils.checkPhone(user.getUsername())) {
             wrapper.eq(User.Fields.phone, user.getUsername());
         } else {
             wrapper.eq(User.Fields.username, user.getUsername());
         }
-        wrapper.eq(User.Fields.password, user.getPassword());
-        User cur = baseMapper.selectOne(wrapper);
-        if (Objects.isNull(cur)) {
-            throw new BreadCloudException(Code.FAIL, "用户名或密码错误");
+        User dbUser = baseMapper.selectOne(wrapper);
+        if (Objects.isNull(dbUser)) {
+            throw new BreadCloudException(Code.FAIL, "用户名或手机号未注册");
         }
-        String token = JwtUtils.token(cur.getId().toString(), cur.getNickname());
+        String inputPassword = MD5Utils.digest(user.getPassword() + dbUser.getSalt());
+        if (!inputPassword.equals(dbUser.getPassword())) {
+            throw new BreadCloudException(Code.FAIL, "密码错误");
+        }
+        String token = JwtUtils.token(dbUser.getId().toString(), dbUser.getSalt());
         redisTemplate.opsForValue().set(Constant.USER_TOKEN_KEY_PREFIX + token, "1", 24, TimeUnit.HOURS);
         UserVo userVo = new UserVo();
-        BeanUtils.copyProperties(cur, userVo);
+        BeanUtils.copyProperties(dbUser, userVo);
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("user", userVo);
         resultMap.put("token", token);
-        log.info("用户登录成功 => {}, token={}", cur, token);
+        log.info("用户登录成功 => {}, token={}", dbUser, token);
         return resultMap;
     }
 

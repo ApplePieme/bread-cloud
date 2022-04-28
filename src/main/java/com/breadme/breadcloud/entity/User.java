@@ -42,6 +42,9 @@ public class User implements Serializable {
     @TableField("avatar")
     private String avatar;
 
+    @TableField("salt")
+    private String salt;
+
     @TableLogic
     @TableField("is_deleted")
     private Integer isDeleted;

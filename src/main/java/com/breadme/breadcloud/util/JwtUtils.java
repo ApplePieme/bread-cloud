@@ -22,20 +22,20 @@ public class JwtUtils {
     }
 
     /**
-     * 使用 id 和昵称获取 token
+     * 使用 id 和盐获取 token
      *
      * @param id 用户 id
-     * @param nickname 用户昵称
+     * @param salt 盐
      * @return token
      */
-    public static String token(String id, String nickname) {
+    public static String token(String id, String salt) {
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
                 .setHeaderParam("alg", "HS256")
                 .setSubject("bread-cloud")
                 .setIssuedAt(new Date())
                 .claim("id", id)
-                .claim("nickname", nickname)
+                .claim("salt", salt)
                 .signWith(SignatureAlgorithm.HS256, APP_SECRET)
                 .compact();
     }
