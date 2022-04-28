@@ -4,6 +4,10 @@ spring:
     url: jdbc:mysql://localhost:3306/bread_cloud
     username: root
     password: root
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1h
   redis:
     host: 192.168.235.100
     port: 6379

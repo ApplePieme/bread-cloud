@@ -8,9 +8,16 @@ package com.breadme.breadcloud.util;
  */
 public interface Constant {
     /**
-     * redis 用户 token key
+     * redis key
+     * token
      */
-    String USER_TOKEN_KEY = "token::";
+    String USER_TOKEN_KEY_PREFIX = "user:token::";
+
+    /**
+     * redis key
+     * 用户信息
+     */
+    String USER_INFO_KEY_PREFIX = "user:info";
 
     /**
      * 手机号正则表达式

@@ -11,6 +11,7 @@ import com.breadme.breadcloud.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -62,7 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BreadCloudException(Code.FAIL, "用户名或密码错误");
         }
         String token = JwtUtils.token(cur.getId().toString(), cur.getNickname());
-        redisTemplate.opsForValue().set(Constant.USER_TOKEN_KEY + token, "1", 7, TimeUnit.DAYS);
+        redisTemplate.opsForValue().set(Constant.USER_TOKEN_KEY_PREFIX + token, "1", 24, TimeUnit.HOURS);
         UserVo userVo = new UserVo();
         BeanUtils.copyProperties(cur, userVo);
         Map<String, Object> resultMap = new HashMap<>();
@@ -73,8 +74,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Cacheable(Constant.USER_INFO_KEY_PREFIX)
     public UserVo getUserInfo(String token) {
-        if (Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY + token))) {
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY_PREFIX + token))) {
             throw new BreadCloudException(Code.FAIL, "你还没有登录哦");
         }
         Long id = Long.parseLong(JwtUtils.id(token));
