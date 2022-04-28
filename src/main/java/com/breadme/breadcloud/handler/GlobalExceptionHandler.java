@@ -2,7 +2,7 @@ package com.breadme.breadcloud.handler;
 
 import com.breadme.breadcloud.exception.BreadCloudException;
 import com.breadme.breadcloud.util.R;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * @author breadme@foxmail.com
  * @date 2022/4/27 17:01
  */
-@Log4j2
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ResponseBody

@@ -8,7 +8,7 @@ import com.breadme.breadcloud.exception.BreadCloudException;
 import com.breadme.breadcloud.mapper.UserMapper;
 import com.breadme.breadcloud.service.UserService;
 import com.breadme.breadcloud.util.*;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @author breadme@foxmail.com
  * @date 2022/4/27 16:10
  */
-@Log4j2
+@Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Value("${bread-cloud.default.avatar}")
@@ -74,7 +74,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserVo getUserInfo(String token) {
-        if (!Boolean.TRUE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY + token))) {
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY + token))) {
             throw new BreadCloudException(Code.FAIL, "你还没有登录哦");
         }
         Long id = Long.parseLong(JwtUtils.id(token));

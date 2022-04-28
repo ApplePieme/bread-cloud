@@ -3,7 +3,7 @@ package com.breadme.breadcloud.interceptor;
 import com.breadme.breadcloud.exception.BreadCloudException;
 import com.breadme.breadcloud.util.Code;
 import com.breadme.breadcloud.util.Constant;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -18,7 +18,7 @@ import java.util.Objects;
  * @author breadme@foxmail.com
  * @date 2022/4/27 19:42
  */
-@Log4j2
+@Slf4j
 public class AuthInterceptor implements HandlerInterceptor {
     @Resource
     private RedisTemplate<String, String> redisTemplate;

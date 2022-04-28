@@ -15,5 +15,5 @@ public interface Constant {
     /**
      * 手机号正则表达式
      */
-    String PHONE_PATTERN = "/^1[3-9]\\d{9}$/";
+    String PHONE_PATTERN = "^1[3-9]\\d{9}$";
 }
