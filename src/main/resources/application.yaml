@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    include: pvt    #包含默认头像、oss等配置内容，相关配置路径可以参考代码中使用到的@value注解
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/bread_cloud
@@ -19,12 +21,3 @@ spring:
         max-wait: -1
         max-idle: 5
         min-idle: 0
-
-bread-cloud:
-  default:
-    avatar: https://bread-cloud.oss-cn-beijing.aliyuncs.com/avatar/default.png
-  oss:
-    endpoint: oss-cn-beijing.aliyuncs.com
-    access-key-id: LTAI5tD4NncSDbJLcJoqx2gv
-    access-key-secret: Ai1SvEM1XlVDZmiTaztc6PvC2IHBx3
-    bucket-name: bread-cloud
