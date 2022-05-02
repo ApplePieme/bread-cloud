@@ -1,9 +1,11 @@
 package com.breadme.breadcloud.controller;
 
 import com.breadme.breadcloud.entity.User;
+import com.breadme.breadcloud.entity.dto.UserDto;
 import com.breadme.breadcloud.entity.vo.UserVo;
 import com.breadme.breadcloud.service.UserService;
 import com.breadme.breadcloud.util.R;
+import com.breadme.breadcloud.util.SecurityUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -31,9 +33,32 @@ public class UserController {
         return R.success().data(userService.login(user));
     }
 
+    @GetMapping("/logout")
+    public R logout(@RequestParam("token") String token) {
+        userService.logout(token);
+        return R.success();
+    }
+
     @GetMapping("/user/info")
     public R getUserInfo(@RequestParam("token") String token) {
         UserVo userVo = userService.getUserInfo(token);
         return R.success().data("user", userVo);
+    }
+
+    @PostMapping("/user/info/modified")
+    public R modifiedUserInfo(@RequestBody User user) {
+        userService.modifiedUserInfo(user);
+        return R.success();
+    }
+
+    @PostMapping("/user/password/modified")
+    public R modifiedPassword(@RequestBody UserDto userDto) {
+        userService.modifiedPassword(userDto);
+        return R.success();
+    }
+
+    @GetMapping("/rsa")
+    public R getRsaKey() {
+        return R.success().data("rsa", SecurityUtils.getRsaPub());
     }
 }

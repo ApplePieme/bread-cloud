@@ -12,6 +12,10 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class AsyncUtils {
+    private AsyncUtils() {
+
+    }
+
     /**
      * 拒绝策略 - 调用者执行
      */

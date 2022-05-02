@@ -28,6 +28,11 @@ public interface Code {
     Integer AUTH_FAIL = 402;
 
     /**
+     * 用户已存在
+     */
+    Integer EXISTING_USER = 403;
+
+    /**
      * 文件已上传到服务器本地
      */
     Integer LOCAL_UPLOADED = 1;

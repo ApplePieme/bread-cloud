@@ -3,6 +3,7 @@ package com.breadme.breadcloud.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.breadme.breadcloud.entity.User;
+import com.breadme.breadcloud.entity.dto.UserDto;
 import com.breadme.breadcloud.entity.vo.UserVo;
 import com.breadme.breadcloud.exception.BreadCloudException;
 import com.breadme.breadcloud.mapper.UserMapper;
@@ -38,12 +39,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void register(User user) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq(User.Fields.username, user.getUsername());
+        if (Objects.nonNull(baseMapper.selectOne(wrapper))) {
+            throw new BreadCloudException(Code.EXISTING_USER, "用户名已存在, 换一个试试吧");
+        }
+        wrapper.clear();
+        wrapper.eq(User.Fields.phone, user.getPhone());
+        if (Objects.nonNull(baseMapper.selectOne(wrapper))) {
+            throw new BreadCloudException(Code.EXISTING_USER, "手机号已注册, 快去登录吧");
+        }
         if (!StringUtils.hasText(user.getNickname())) {
             user.setNickname(user.getUsername());
         }
         user.setAvatar(defaultAvatar);
         user.setSalt(UUID.randomUUID().toString());
-        user.setPassword(MD5Utils.digest(user.getPassword() + user.getSalt()));
+        user.setPassword(SecurityUtils.digest(SecurityUtils.decrypt(user.getPassword()) + user.getSalt()));
         if (!save(user)) {
             throw new BreadCloudException(Code.FAIL, "注册失败, 再试一次吧");
         }
@@ -62,11 +73,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Objects.isNull(dbUser)) {
             throw new BreadCloudException(Code.FAIL, "用户名或手机号未注册");
         }
-        String inputPassword = MD5Utils.digest(user.getPassword() + dbUser.getSalt());
+        String inputPassword = SecurityUtils.digest(SecurityUtils.decrypt(user.getPassword()) + dbUser.getSalt());
         if (!inputPassword.equals(dbUser.getPassword())) {
             throw new BreadCloudException(Code.FAIL, "密码错误");
         }
-        String token = JwtUtils.token(dbUser.getId().toString(), dbUser.getSalt());
+        String token = SecurityUtils.getToken(dbUser.getId().toString(), dbUser.getSalt());
         redisTemplate.opsForValue().set(Constant.USER_TOKEN_KEY_PREFIX + token, "1", 24, TimeUnit.HOURS);
         UserVo userVo = new UserVo();
         BeanUtils.copyProperties(dbUser, userVo);
@@ -78,19 +89,67 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public void logout(String token) {
+        if (Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY_PREFIX + token))) {
+            throw new BreadCloudException(Code.FAIL, "你还没有登录哦");
+        }
+        redisTemplate.delete(Constant.USER_TOKEN_KEY_PREFIX + token);
+        redisTemplate.delete(Constant.USER_INFO_KEY_PREFIX + "::" + token);
+    }
+
+    @Override
     @Cacheable(Constant.USER_INFO_KEY_PREFIX)
     public UserVo getUserInfo(String token) {
         if (Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY_PREFIX + token))) {
             throw new BreadCloudException(Code.FAIL, "你还没有登录哦");
         }
-        Long id = Long.parseLong(JwtUtils.id(token));
+        Long id = Long.parseLong(SecurityUtils.getUserId(token));
         User user = baseMapper.selectById(id);
         if (Objects.isNull(user)) {
+            log.error("数据库查询不到用户, JWT解析id={}", id);
             throw new BreadCloudException(Code.FAIL, "出了点小问题, 请重新登录");
         }
         UserVo userVo = new UserVo();
         BeanUtils.copyProperties(user, userVo);
         log.info("获取用户信息 => {}", user);
         return userVo;
+    }
+
+    @Override
+    public void modifiedUserInfo(User user) {
+        user.setId(UserContextUtils.getUserId());
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq(User.Fields.phone, user.getPhone());
+        wrapper.ne(User.Fields.id, user.getId());
+        if (Objects.nonNull(baseMapper.selectOne(wrapper))) {
+            throw new BreadCloudException(Code.EXISTING_USER, "该手机号已被注册");
+        }
+        if (baseMapper.updateById(user) < 1) {
+            throw new BreadCloudException(Code.FAIL, "修改信息失败, 请稍后再试");
+        }
+        redisTemplate.delete(Constant.USER_INFO_KEY_PREFIX + "::" + UserContextUtils.getToken());
+    }
+
+    @Override
+    public void modifiedPassword(UserDto userDto) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq(User.Fields.id, UserContextUtils.getUserId());
+        User dbUser = baseMapper.selectOne(wrapper);
+        if (Objects.isNull(dbUser)) {
+            throw new BreadCloudException(Code.FAIL, "出了点小问题, 请重新登录");
+        }
+        String srcPassword = SecurityUtils.decrypt(userDto.getSrcPassword());
+        if (!dbUser.getPassword().equals(SecurityUtils.digest(srcPassword + dbUser.getSalt()))) {
+            throw new BreadCloudException(Code.FAIL, "原密码错误, 请重试");
+        }
+        String newPassword = SecurityUtils.decrypt(userDto.getNewPassword());
+        if (dbUser.getPassword().equals(SecurityUtils.digest(newPassword + dbUser.getSalt()))) {
+            throw new BreadCloudException(Code.FAIL, "新密码不能和原密码一样");
+        }
+        dbUser.setSalt(UUID.randomUUID().toString());
+        dbUser.setPassword(SecurityUtils.digest(newPassword + dbUser.getSalt()));
+        if (baseMapper.updateById(dbUser) < 1) {
+            throw new BreadCloudException(Code.FAIL, "修改密码失败, 请稍后再试");
+        }
     }
 }
