@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.breadme.breadcloud.entity.User;
 import com.breadme.breadcloud.entity.dto.UserDto;
 import com.breadme.breadcloud.entity.vo.UserVo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -55,4 +56,12 @@ public interface UserService extends IService<User> {
      * 修改密码
      */
     void modifiedPassword(UserDto userDto);
+
+    /**
+     * 上传头像
+     *
+     * @param file 头像
+     * @return 头像url
+     */
+    String uploadAvatar(MultipartFile file);
 }

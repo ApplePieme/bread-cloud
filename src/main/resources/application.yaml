@@ -23,3 +23,8 @@ spring:
 bread-cloud:
   default:
     avatar: https://bread-cloud.oss-cn-beijing.aliyuncs.com/avatar/default.png
+  oss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    access-key-id: LTAI5tD4NncSDbJLcJoqx2gv
+    access-key-secret: Ai1SvEM1XlVDZmiTaztc6PvC2IHBx3
+    bucket-name: bread-cloud

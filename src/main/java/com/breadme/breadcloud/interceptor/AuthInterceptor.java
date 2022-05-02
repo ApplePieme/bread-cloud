@@ -27,7 +27,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String token = request.getHeader("X-Token");
+        String token = request.getHeader("token");
         if (Objects.isNull(token) || Boolean.FALSE.equals(redisTemplate.hasKey(Constant.USER_TOKEN_KEY_PREFIX + token))) {
             log.info("AuthInterceptor: token为空或key不存在");
             throw new BreadCloudException(Code.AUTH_FAIL, "你还没有登录哦");

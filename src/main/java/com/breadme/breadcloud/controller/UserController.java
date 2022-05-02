@@ -7,6 +7,7 @@ import com.breadme.breadcloud.service.UserService;
 import com.breadme.breadcloud.util.R;
 import com.breadme.breadcloud.util.SecurityUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
@@ -18,6 +19,7 @@ import javax.validation.Valid;
  * @date 2022/4/27 16:20
  */
 @RestController
+@RequestMapping("/user")
 public class UserController {
     @Resource
     private UserService userService;
@@ -39,19 +41,19 @@ public class UserController {
         return R.success();
     }
 
-    @GetMapping("/user/info")
+    @GetMapping("/info")
     public R getUserInfo(@RequestParam("token") String token) {
         UserVo userVo = userService.getUserInfo(token);
         return R.success().data("user", userVo);
     }
 
-    @PostMapping("/user/info/modified")
+    @PostMapping("/info/modified")
     public R modifiedUserInfo(@RequestBody User user) {
         userService.modifiedUserInfo(user);
         return R.success();
     }
 
-    @PostMapping("/user/password/modified")
+    @PostMapping("/password/modified")
     public R modifiedPassword(@RequestBody UserDto userDto) {
         userService.modifiedPassword(userDto);
         return R.success();
@@ -60,5 +62,10 @@ public class UserController {
     @GetMapping("/rsa")
     public R getRsaKey() {
         return R.success().data("rsa", SecurityUtils.getRsaPub());
+    }
+
+    @PostMapping("/upload/avatar")
+    public R uploadAvatar(@RequestParam("file") MultipartFile file) {
+        return R.success().data("url", userService.uploadAvatar(file));
     }
 }
