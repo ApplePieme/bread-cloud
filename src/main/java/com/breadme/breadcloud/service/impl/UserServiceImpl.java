@@ -1,5 +1,8 @@
 package com.breadme.breadcloud.service.impl;
 
+import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.model.PutObjectRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.breadme.breadcloud.entity.User;
@@ -10,14 +13,17 @@ import com.breadme.breadcloud.mapper.UserMapper;
 import com.breadme.breadcloud.service.UserService;
 import com.breadme.breadcloud.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +39,18 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Value("${bread-cloud.default.avatar}")
     private String defaultAvatar;
+
+    @Value("${bread-cloud.oss.endpoint}")
+    private String endpoint;
+
+    @Value("${bread-cloud.oss.access-key-id}")
+    private String accessKeyId;
+
+    @Value("${bread-cloud.oss.access-key-secret}")
+    private String accessKeySecret;
+
+    @Value("${bread-cloud.oss.bucket-name}")
+    private String bucketName;
 
     @Resource
     private RedisTemplate<String, String> redisTemplate;
@@ -151,5 +169,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (baseMapper.updateById(dbUser) < 1) {
             throw new BreadCloudException(Code.FAIL, "修改密码失败, 请稍后再试");
         }
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        OSS oss = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        PutObjectRequest putObjectRequest;
+        String originalFilename = file.getOriginalFilename();
+        if (file.isEmpty() || Objects.isNull(originalFilename)) {
+            throw new BreadCloudException(Code.FAIL, "上传头像为空");
+        }
+        String extensionName = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filePath = "avatar/" + new DateTime().toString("yyyy/MM/dd");
+        String fileName = UUID.randomUUID().toString().replaceAll("-", "");
+        String url = filePath + "/" + fileName + extensionName;
+        String ret;
+        try {
+            putObjectRequest = new PutObjectRequest(bucketName, url, file.getInputStream());
+            oss.putObject(putObjectRequest);
+            ret = "https://" + bucketName + "." + endpoint + "/" + url;
+        } catch (IOException e) {
+            log.error("获取上传文件流失败\n", e);
+            throw new BreadCloudException(Code.FAIL, "上传头像失败, 请稍后重试");
+        } finally {
+            oss.shutdown();
+        }
+        return ret;
     }
 }
